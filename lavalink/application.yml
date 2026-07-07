@@ -2,10 +2,9 @@ server:
   port: 2333
   address: 0.0.0.0
 
-
 lavalink:
   server:
-    password: "youshallnotpass"
+    password: "SIMPERO123"
 
     sources:
       youtube: false
@@ -16,19 +15,9 @@ lavalink:
       vimeo: true
       local: false
 
-    bufferDurationMs: 400
-    frameBufferDurationMs: 5000
-    opusEncodingQuality: 10
-    trackStuckThresholdMs: 10000
-
-
   plugins:
     - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
       repository: "https://maven.lavalink.dev/releases"
-
-    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.4.1"
-      repository: "https://maven.lavalink.dev/releases"
-
 
 
 plugins:
@@ -41,23 +30,9 @@ plugins:
 
     clients:
       - MWEB
-      - TV
+      - MUSIC
       - ANDROID_VR
-      - ANDROID
-
-
-  lavasrc:
-    providers:
-      spotify: true
-      applemusic: false
-      deezer: false
-      youtube: true
-      soundcloud: true
-
-
-metrics:
-  prometheus:
-    enabled: false
+      - TVHTML5EMBEDDED
 
 
 logging:
