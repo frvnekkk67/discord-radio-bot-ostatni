@@ -182,21 +182,19 @@ def build_filters(name: str):
         EQ_PRESETS["flat"]
     )
 
-
     filters = wavelink.Filters()
 
-
-    filters.equalizer = [
-        {
-            "band": i,
-            "gain": gain
-        }
-        for i, gain in enumerate(bands)
-    ]
-
+    filters.equalizer.set(
+        bands=[
+            {
+                "band": i,
+                "gain": gain
+            }
+            for i, gain in enumerate(bands)
+        ]
+    )
 
     return filters
-
 
 
 # ==========================
@@ -346,7 +344,7 @@ class MusicPlayer(wavelink.Player):
 
             self.query_queue.insert(
                 0,
-                self.now_playing.identifier
+                self.now_playing.uri
             )
 
 
