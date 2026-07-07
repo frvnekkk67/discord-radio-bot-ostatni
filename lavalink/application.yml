@@ -1,0 +1,70 @@
+# Konfiguracja serwera Lavalink - to jest ODDZIELNA usługa (nie bot!).
+# Wdrażana jako osobny serwis na Railway, patrz README.md w głównym folderze.
+#
+# Hasło NIE jest tu wpisane na stałe - ustaw je przez zmienną środowiskową
+# LAVALINK_SERVER_PASSWORD w ustawieniach tej usługi na Railway (Spring Boot,
+# na którym działa Lavalink, automatycznie podmienia wartości z ENV).
+
+server:
+  port: 2333
+  address: 0.0.0.0
+
+lavalink:
+  server:
+    password: "youshallnotpass" # nadpisywane przez zmienną LAVALINK_SERVER_PASSWORD
+    sources:
+      youtube: false # oficjalne źródło YouTube jest wyłączone - używamy pluginu niżej
+      bandcamp: true
+      soundcloud: true
+      twitch: true
+      vimeo: true
+      http: true
+      local: false
+    bufferDurationMs: 400
+    frameBufferDurationMs: 5000
+    opusEncodingQuality: 10
+    trackStuckThresholdMs: 10000
+
+  plugins:
+    # Plugin YouTube - oficjalne źródło YT w Lavalink jest przestarzałe/wyłączone,
+    # to jest aktualnie zalecany, aktywnie utrzymywany zamiennik.
+    # Sprawdź https://github.com/lavalink-devs/youtube-source/releases po najnowszą wersję
+    # i podmień VERSION poniżej, jeśli coś przestanie działać (YouTube zmienia
+    # mechanizmy blokowania botów regularnie, więc czasem trzeba to zaktualizować).
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
+      repository: "https://maven.lavalink.dev/releases"
+
+plugins:
+  youtube:
+    enabled: true
+    allowSearch: true
+    allowDirectVideoIds: true
+    allowDirectPlaylistIds: true
+    # Rotacja "klientów" YouTube - jeśli jeden zostanie zablokowany/zwróci błąd,
+    # próbowany jest kolejny. Szerszy zestaw = więcej szans na sukces.
+    clients:
+      - MWEB
+      - WEB
+      - MUSIC
+      - WEBEMBEDDED
+      - ANDROID_VR
+      - TV
+      - TVHTML5EMBEDDED
+    # Jeśli mimo rotacji klientów wyszukiwanie/odtwarzanie zacznie zawodzić,
+    # YouTube prawdopodobnie zaostrzyło blokady - wtedy trzeba dodać PoToken
+    # albo OAuth (patrz sekcja "Rozwiązywanie problemów" w głównym README.md).
+    # oauth:
+    #   enabled: true
+    #   refreshToken: ""
+    # pot:
+    #   token: ""
+    #   visitorData: ""
+
+metrics:
+  prometheus:
+    enabled: false
+
+logging:
+  level:
+    root: INFO
+    lavalink: INFO
