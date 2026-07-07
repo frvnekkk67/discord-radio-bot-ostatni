@@ -74,7 +74,7 @@ async def resolve_track(query: str):
 
     else:
         # LavaSrc + YouTube Music
-        search = f"ytmsearch:{query}"
+        search = f"scsearch:{query}"
 
     try:
         results = await wavelink.Playable.search(search)
