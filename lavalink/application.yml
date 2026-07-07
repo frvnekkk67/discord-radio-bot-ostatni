@@ -43,13 +43,12 @@ plugins:
     # Rotacja "klientów" YouTube - jeśli jeden zostanie zablokowany/zwróci błąd,
     # próbowany jest kolejny. Szerszy zestaw = więcej szans na sukces.
     clients:
-      - MWEB
-      - WEB
-      - MUSIC
-      - WEBEMBEDDED
-      - ANDROID_VR
-      - TV
-      - TVHTML5EMBEDDED
+     clients:
+     - MUSIC
+     - ANDROID
+     - IOS
+     - TV
+  
     # Jeśli mimo rotacji klientów wyszukiwanie/odtwarzanie zacznie zawodzić,
     # YouTube prawdopodobnie zaostrzyło blokady - wtedy trzeba dodać PoToken
     # albo OAuth (patrz sekcja "Rozwiązywanie problemów" w głównym README.md).
