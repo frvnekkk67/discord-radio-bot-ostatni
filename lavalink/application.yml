@@ -24,10 +24,10 @@ plugins:
     enabled: true
 
     clients:
-      - WEB
-      - ANDROID
-      - MUSIC
-      - TVHTML5EMBEDDED
+      - IOS
+      - ANDROID_VR
+      - TV
+      - MVEB
 
     allowSearch: true
     allowDirectVideoIds: true
