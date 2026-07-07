@@ -13,7 +13,7 @@ lavalink:
   server:
     password: "youshallnotpass" # nadpisywane przez zmienną LAVALINK_SERVER_PASSWORD
     sources:
-      youtube: false # oficjalne źródło YouTube jest wyłączone - używamy pluginu niżej
+      youtube: true # oficjalne źródło YouTube jest wyłączone - używamy pluginu niżej
       bandcamp: true
       soundcloud: true
       twitch: true
