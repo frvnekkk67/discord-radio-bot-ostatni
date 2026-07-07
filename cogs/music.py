@@ -42,29 +42,6 @@ class Music(commands.Cog):
         except LavalinkUnavailableError:
             pass
 
-    @app_commands.command(name="nastepny", description="Odtwarza wybrany utwór NATYCHMIAST, z pominięciem kolejki")
-    @app_commands.describe(zapytanie="Tytuł, link YouTube albo bezpośredni link do pliku audio")
-    async def nastepny(self, interaction: discord.Interaction, zapytanie: str):
-        await interaction.response.defer()
-        player = self.bot.players.get(interaction.guild_id)
-        if not player:
-            channel = await self._get_user_voice_channel(interaction)
-            if channel is None:
-                await interaction.followup.send("Musisz najpierw wejść na kanał głosowy.")
-                return
-            player = await self.bot.players.connect(channel)
-            player.text_channel = interaction.channel
-
-        try:
-            ok = await player.play_now(zapytanie)
-        except LavalinkUnavailableError:
-            await interaction.followup.send("⚠️ Serwer muzyczny (Lavalink) jest chwilowo niedostępny.")
-            return
-        if not ok:
-            await interaction.followup.send("Nie udało się znaleźć tego utworu.")
-            return
-        await interaction.followup.send(f"▶️ Gram teraz: **{zapytanie}** (kolejka wznowi się zaraz po)")
-
     @app_commands.command(name="pomin", description="Pomija aktualnie grany utwór")
     async def pomin(self, interaction: discord.Interaction):
         player = self.bot.players.get(interaction.guild_id)
