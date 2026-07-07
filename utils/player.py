@@ -32,7 +32,8 @@ EQ_PRESETS: dict[str, list[float]] = {
     "bass++": [
         1.0, 0.95, 0.85, 0.7, 0.5,
         0.3, 0.15, 0.05, 0,
-        -0.05, -0.1, -0.1, -0.1, -0.1, -0.1
+        -0.05, -0.1, -0.1, -0.1,
+        -0.1, -0.1
     ],
 
     "club": [
@@ -44,7 +45,8 @@ EQ_PRESETS: dict[str, list[float]] = {
     "edm": [
         0.9, 0.85, 0.8, 0.6, 0.4,
         0.25, 0.15, 0.1, 0.1,
-        0.05, 0, -0.05, -0.05, -0.05, -0.05
+        0.05, 0, -0.05, -0.05,
+        -0.05, -0.05
     ],
 }
 
@@ -69,6 +71,7 @@ def _node_error(error: Exception):
         )
         or "no nodes" in text
         or "connected state" in text
+        or "connection" in text
     )
 
 
@@ -85,8 +88,8 @@ async def resolve_track(query: str):
         search_query = query
 
     else:
-        # LavaSrc + YouTube Music
-        search_query = f"ytmsearch:{query}"
+        # YouTube search
+        search_query = f"ytsearch:{query}"
 
 
     try:
@@ -102,7 +105,7 @@ async def resolve_track(query: str):
             raise LavalinkUnavailableError from e
 
         print(
-            f"[music] Search error {e}"
+            f"[music] Search error: {e}"
         )
 
         return None
@@ -114,16 +117,13 @@ async def resolve_track(query: str):
 
 
 
-    if isinstance(
-        results,
-        wavelink.Playlist
-    ):
+    if isinstance(results, wavelink.Playlist):
 
-        return (
-            results.tracks[0]
-            if results.tracks
-            else None
-        )
+        if results.tracks:
+            return results.tracks[0]
+
+        return None
+
 
 
     return results[0]
@@ -151,26 +151,20 @@ async def resolve_playlist_queries(url: str):
         return []
 
 
-
-    if isinstance(
-        results,
-        wavelink.Playlist
-    ):
+    if isinstance(results, wavelink.Playlist):
 
         return [
-            track.uri
+            track.identifier
             for track in results.tracks
-            if track.uri
+            if track.identifier
         ]
-
 
 
     if results:
 
         return [
-            results[0].uri
-        ] if results[0].uri else []
-
+            results[0].identifier
+        ]
 
 
     return []
@@ -192,15 +186,13 @@ def build_filters(name: str):
     filters = wavelink.Filters()
 
 
-    filters.equalizer.set(
-        bands=[
-            {
-                "band": i,
-                "gain": gain
-            }
-            for i, gain in enumerate(bands)
-        ]
-    )
+    filters.equalizer = [
+        {
+            "band": i,
+            "gain": gain
+        }
+        for i, gain in enumerate(bands)
+    ]
 
 
     return filters
@@ -221,27 +213,21 @@ class MusicPlayer(wavelink.Player):
             **kwargs
         )
 
-
         self.text_channel = None
 
         self.query_queue = []
 
         self.now_playing = None
 
-
         self.radio_enabled = False
 
         self.radio_tracks = []
 
-
         self.paused_until = 0
-
 
         self.eq_preset = "flat"
 
 
-
-    # QUEUE
 
     def add_to_queue(self, query):
 
@@ -279,26 +265,21 @@ class MusicPlayer(wavelink.Player):
 
         if not self.query_queue:
 
-
             if self.radio_enabled and self.radio_tracks:
 
                 tracks = list(
                     self.radio_tracks
                 )
 
-                random.shuffle(
-                    tracks
-                )
+                random.shuffle(tracks)
 
                 self.query_queue.extend(
                     tracks
                 )
 
-
             else:
 
                 self.now_playing = None
-
                 return
 
 
@@ -306,15 +287,23 @@ class MusicPlayer(wavelink.Player):
         query = self.query_queue.pop(0)
 
 
-        track = await resolve_track(
-            query
-        )
+        try:
+
+            track = await resolve_track(query)
+
+        except Exception as e:
+
+            print(
+                f"[music] Track error: {e}"
+            )
+
+            return
+
 
 
         if not track:
 
             await self.play_next()
-
             return
 
 
@@ -324,10 +313,16 @@ class MusicPlayer(wavelink.Player):
 
         if self.channel:
 
-            await set_voice_channel_status(
-                self.channel.id,
-                f"🎵 {track.title}"
-            )
+            try:
+
+                await set_voice_channel_status(
+                    self.channel.id,
+                    f"🎵 {track.title}"
+                )
+
+            except Exception:
+                pass
+
 
 
         await self.play(track)
@@ -347,18 +342,20 @@ class MusicPlayer(wavelink.Player):
 
 
 
-        if self.now_playing and self.now_playing.uri:
+        if self.now_playing:
 
             self.query_queue.insert(
                 0,
-                self.now_playing.uri
+                self.now_playing.identifier
             )
 
 
         self.now_playing = track
 
 
-        await self.play(track)
+        await self.play(
+            track
+        )
 
 
         return True
@@ -370,8 +367,6 @@ class MusicPlayer(wavelink.Player):
         await self.stop()
 
 
-
-    # PAUSE
 
     async def pause_for(self, minutes):
 
@@ -402,8 +397,6 @@ class MusicPlayer(wavelink.Player):
 
 
 
-    # EQ
-
     async def apply_eq_preset(self, preset):
 
         if preset not in EQ_PRESETS:
@@ -421,8 +414,6 @@ class MusicPlayer(wavelink.Player):
         )
 
 
-
-    # RADIO
 
     def set_radio_tracks(self, tracks):
 
@@ -500,6 +491,13 @@ class PlayerManager:
 
 
     async def connect(self, channel):
+
+        if not wavelink.Pool.nodes:
+
+            raise LavalinkUnavailableError(
+                "Brak Lavalink node"
+            )
+
 
         guild = channel.guild
 
