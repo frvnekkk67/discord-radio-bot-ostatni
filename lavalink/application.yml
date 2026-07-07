@@ -66,3 +66,11 @@ logging:
   level:
     root: INFO
     lavalink: INFO
+
+    lavasrc:
+  sources:
+    spotify: false
+    applemusic: false
+    deezer: false
+    youtube: true
+    soundcloud: true
