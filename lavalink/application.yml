@@ -40,10 +40,10 @@ plugins:
     allowDirectPlaylistIds: true
 
     clients:
-      - WEB
-      - MUSIC
+      - MWEB
+      - TV
+      - ANDROID_VR
       - ANDROID
-      - TVHTML5EMBEDDED
 
 
   lavasrc:
