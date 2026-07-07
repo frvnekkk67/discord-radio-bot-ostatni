@@ -1,3 +1,8 @@
+server:
+  port: 2333
+  address: 0.0.0.0
+
+
 lavalink:
   server:
     password: "youshallnotpass"
@@ -11,6 +16,12 @@ lavalink:
       vimeo: true
       local: false
 
+    bufferDurationMs: 400
+    frameBufferDurationMs: 5000
+    opusEncodingQuality: 10
+    trackStuckThresholdMs: 10000
+
+
   plugins:
     - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
       repository: "https://maven.lavalink.dev/releases"
@@ -19,19 +30,20 @@ lavalink:
       repository: "https://maven.lavalink.dev/releases"
 
 
+
 plugins:
   youtube:
     enabled: true
 
-    clients:
-      - IOS
-      - ANDROID_VR
-      - TV
-      - MVEB
-
     allowSearch: true
     allowDirectVideoIds: true
     allowDirectPlaylistIds: true
+
+    clients:
+      - WEB
+      - MUSIC
+      - ANDROID
+      - TVHTML5EMBEDDED
 
 
   lavasrc:
@@ -41,3 +53,14 @@ plugins:
       deezer: false
       youtube: true
       soundcloud: true
+
+
+metrics:
+  prometheus:
+    enabled: false
+
+
+logging:
+  level:
+    root: INFO
+    lavalink: INFO
