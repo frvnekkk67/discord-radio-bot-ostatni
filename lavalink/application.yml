@@ -2,6 +2,7 @@ server:
   port: 2333
   address: 0.0.0.0
 
+
 lavalink:
   server:
     password: "SIMPERO123"
@@ -14,6 +15,12 @@ lavalink:
       twitch: true
       vimeo: true
       local: false
+
+    bufferDurationMs: 400
+    frameBufferDurationMs: 5000
+    opusEncodingQuality: 10
+    trackStuckThresholdMs: 10000
+
 
   plugins:
     - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
@@ -29,10 +36,9 @@ plugins:
     allowDirectPlaylistIds: true
 
     clients:
-      - MWEB
       - MUSIC
+      - MWEB
       - ANDROID_VR
-      - TVHTML5EMBEDDED
 
 
 logging:
