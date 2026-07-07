@@ -25,13 +25,12 @@ lavalink:
     opusEncodingQuality: 10
     trackStuckThresholdMs: 10000
 
+ lavalink:
   plugins:
-    # Plugin YouTube - oficjalne źródło YT w Lavalink jest przestarzałe/wyłączone,
-    # to jest aktualnie zalecany, aktywnie utrzymywany zamiennik.
-    # Sprawdź https://github.com/lavalink-devs/youtube-source/releases po najnowszą wersję
-    # i podmień VERSION poniżej, jeśli coś przestanie działać (YouTube zmienia
-    # mechanizmy blokowania botów regularnie, więc czasem trzeba to zaktualizować).
     - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.1"
+      repository: "https://maven.lavalink.dev/releases"
+
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.4.1"
       repository: "https://maven.lavalink.dev/releases"
 
 plugins:
