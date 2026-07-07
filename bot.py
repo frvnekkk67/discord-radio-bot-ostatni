@@ -1,5 +1,5 @@
 """
-Główny punkt wejścia bota-radia Discord + dashboard webowy.
+Główny punkt wejścia bota-radia Discord + dashboard webowy
 
 Uruchomienie:
 python bot.py
