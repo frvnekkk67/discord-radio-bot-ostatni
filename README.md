@@ -40,6 +40,24 @@ To oznacza dwie usługi w jednym projekcie Railway:
 | `/playlistadodajplayliste <link>` | *(rola admina bota)* Dogrywa całą playlistę YouTube do playlisty radiowej |
 | `/playlistausun <id>` | *(rola admina bota)* Usuwa utwór z playlisty |
 | `/playlistalista` | Pokazuje playlistę radiową |
+| `/zapowiedz <godzina> <link>` | *(rola admina bota)* Ustawia zapowiedź (mp3) odtwarzaną o pełnej godzinie |
+| `/usunzapowiedz <godzina>` | *(rola admina bota)* Usuwa zapowiedź dla danej godziny |
+| `/listazapowiedzi` | Pokazuje skonfigurowane zapowiedzi godzinowe |
+
+### Zapowiedzi godzinowe ("Minęła właśnie jedenasta w Bass FM")
+
+Radio może automatycznie przerywać aktualny utwór o pełnej godzinie i grać
+Twój własny jingiel (mp3, który sam nagrasz/zrobisz), np. "Minęła właśnie
+jedenasta w Bass FM". Działa tak:
+- Ustawiasz zapowiedź dla wybranych godzin (0-23) - przez `/zapowiedz` albo
+  w dashboardzie (sekcja "Zapowiedzi godzinowe").
+- Bot sam sprawdza aktualny czas (strefa czasowa z `TIMEZONE`, domyślnie
+  `Europe/Warsaw`) i o pełnej godzinie, dla której masz ustawioną zapowiedź,
+  przerywa aktualny utwór, gra zapowiedź, po czym wraca do muzyki.
+- Equalizer na czas zapowiedzi przełącza się na "klasyczna" (żeby głos był
+  czytelny), a zaraz po niej wraca do Twojego normalnego ustawienia
+  (domyślnie "bas").
+- Godziny bez ustawionej zapowiedzi po prostu nic nie robią - grają dalej normalnie.
 
 Więcej (equalizer, zarządzanie playlistą, podgląd na żywo) jest wygodniej
 dostępne na dashboardzie - patrz niżej.
@@ -137,6 +155,15 @@ Dashboard będzie dostępny pod http://localhost:8080
 
 5. Zakładka **Settings** → **Networking** → **Generate Domain**, żeby dostać
    publiczny adres dashboardu (Railway sam podpina zmienną `PORT`).
+
+> **Uwaga:** Railway obecnie buduje projekty swoim builderem **Railpack**
+> (wykrywa Pythona i wersję automatycznie na podstawie `requirements.txt`).
+> Nie trzeba (i nie warto) wymuszać konkretnej wersji Pythona plikiem
+> `.python-version` - część starszych wersji nie ma zweryfikowanych
+> "GitHub attestations", co powoduje błąd builda (`mise ERROR ... No GitHub
+> artifact attestations found`). Jeśli mimo wszystko chcesz przypiąć
+> konkretną wersję i trafisz na ten błąd, dodaj zmienną środowiskową
+> `MISE_PYTHON_GITHUB_ATTESTATIONS=false` w usłudze bota.
 
 ## 5. Wdrożenie serwera Lavalink na Railway
 
