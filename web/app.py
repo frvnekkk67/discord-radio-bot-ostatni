@@ -7,6 +7,7 @@ procesami).
 Autoryzacja: prosty token (nagłówek "Authorization: Bearer <token>"),
 porównywany ze zmienną środowiskową DASHBOARD_TOKEN.
 """
+import asyncio
 import os
 
 from fastapi import FastAPI, HTTPException, Header, Depends
@@ -15,12 +16,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 import config
-from utils.player import EQ_PRESETS, LavalinkUnavailableError
+from utils.player import EQ_PRESETS, LavalinkUnavailableError, normalize_audio_url
+import wavelink
 
 app = FastAPI(title="Radio Bot Dashboard")
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
+
+_connect_locks: dict[int, asyncio.Lock] = {}
+
+
+def _lock_for(guild_id: int) -> asyncio.Lock:
+    if guild_id not in _connect_locks:
+        _connect_locks[guild_id] = asyncio.Lock()
+    return _connect_locks[guild_id]
 
 
 def get_bot():
@@ -67,6 +77,12 @@ class PlaylistAddBody(BaseModel):
     guild_id: int
     url: str
     title: str | None = None
+
+
+class AnnouncementBody(BaseModel):
+    guild_id: int
+    hour: int
+    url: str
 
 
 # ---------- Serwery / kanały ----------
@@ -125,21 +141,41 @@ async def connect(body: ConnectBody, auth=Depends(check_token)):
     if not channel:
         raise HTTPException(404, "Kanał nie znaleziony")
 
-    player = await bot.players.connect(channel)
-    player.text_channel = None
+    lock = _lock_for(body.guild_id)
+    if lock.locked():
+        raise HTTPException(409, "Trwa już próba połączenia dla tego serwera - poczekaj chwilę.")
 
-    playlist = await bot.db.get_playlist(body.guild_id)
-    player.set_radio_tracks([t["url"] for t in playlist])
+    async with lock:
+        try:
+            player = await bot.players.connect(channel)
+        except wavelink.exceptions.ChannelTimeoutException:
+            raise HTTPException(
+                504,
+                "Nie udało się połączyć z kanałem głosowym w 30 sekund. Spróbuj ponownie za "
+                "chwilę - jeśli się powtarza, sprawdź logi usługi Lavalink."
+            )
+        except Exception as e:
+            raise HTTPException(500, f"Błąd połączenia: {e}")
 
-    settings = await bot.db.get_settings(body.guild_id)
-    await player.apply_eq_preset(settings["eq_preset"])
-    await player.set_volume(settings["volume"])
-    await bot.db.set_voice_channel(body.guild_id, body.channel_id, enabled=True)
+        player.text_channel = None
 
-    try:
-        await player.start_if_idle()
-    except LavalinkUnavailableError:
-        raise HTTPException(503, "Lavalink jest chwilowo niedostępny")
+        playlist = await bot.db.get_playlist(body.guild_id)
+        player.set_radio_tracks([t["url"] for t in playlist])
+
+        settings = await bot.db.get_settings(body.guild_id)
+        try:
+            player.default_eq_preset = settings["eq_preset"]
+            await player.apply_eq_preset(settings["eq_preset"])
+            await player.set_volume(settings["volume"])
+        except Exception as e:
+            print(f"[dashboard] Nie udało się ustawić eq/głośności po połączeniu: {e}")
+
+        await bot.db.set_voice_channel(body.guild_id, body.channel_id, enabled=True)
+
+        try:
+            await player.start_if_idle()
+        except LavalinkUnavailableError:
+            raise HTTPException(503, "Lavalink jest chwilowo niedostępny")
 
     return {"ok": True}
 
@@ -226,6 +262,7 @@ async def set_eq(body: EqBody, auth=Depends(check_token)):
     player = bot.players.get(body.guild_id)
     if player:
         await player.apply_eq_preset(body.preset)
+        player.default_eq_preset = body.preset
     await bot.db.set_eq_preset(body.guild_id, body.preset)
     return {"ok": True}
 
@@ -241,11 +278,12 @@ async def get_playlist(guild_id: int, auth=Depends(check_token)):
 @app.post("/api/playlist/add")
 async def add_track(body: PlaylistAddBody, auth=Depends(check_token)):
     bot = get_bot()
-    title = body.title or body.url
-    track_id = await bot.db.add_track(body.guild_id, body.url, title)
+    url = normalize_audio_url(body.url)
+    title = body.title or url
+    track_id = await bot.db.add_track(body.guild_id, url, title)
     player = bot.players.get(body.guild_id)
     if player and player.radio_enabled:
-        player.radio_tracks.append(body.url)
+        player.radio_tracks.append(url)
     return {"ok": True, "id": track_id}
 
 
@@ -257,6 +295,32 @@ async def remove_track(track_id: int, guild_id: int, auth=Depends(check_token)):
     player = bot.players.get(guild_id)
     if player:
         player.set_radio_tracks([t["url"] for t in playlist])
+    return {"ok": True}
+
+
+# ---------- Zapowiedzi godzinowe ----------
+
+@app.get("/api/announcements")
+async def get_announcements(guild_id: int, auth=Depends(check_token)):
+    bot = get_bot()
+    announcements = await bot.db.get_hour_announcements(guild_id)
+    return [{"hour": h, "url": u} for h, u in sorted(announcements.items())]
+
+
+@app.post("/api/announcements")
+async def set_announcement(body: AnnouncementBody, auth=Depends(check_token)):
+    if not (0 <= body.hour <= 23):
+        raise HTTPException(400, "Godzina musi być liczbą od 0 do 23")
+    bot = get_bot()
+    url = normalize_audio_url(body.url)
+    await bot.db.set_hour_announcement(body.guild_id, body.hour, url)
+    return {"ok": True}
+
+
+@app.delete("/api/announcements/{hour}")
+async def remove_announcement(hour: int, guild_id: int, auth=Depends(check_token)):
+    bot = get_bot()
+    await bot.db.remove_hour_announcement(guild_id, hour)
     return {"ok": True}
 
 
