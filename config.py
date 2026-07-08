@@ -29,3 +29,6 @@ PORT = int(os.getenv("PORT", "8080"))
 
 # Domyślna głośność (0-150, gdzie 100 = normalna)
 DEFAULT_VOLUME = int(os.getenv("DEFAULT_VOLUME", "70"))
+
+# Strefa czasowa używana do zapowiedzi godzinowych ("Minęła właśnie ... w Bass FM")
+TIMEZONE = os.getenv("TIMEZONE", "Europe/Warsaw")
