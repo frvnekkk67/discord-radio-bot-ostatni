@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS radio_settings (
     voice_channel_id TEXT,
     admin_role_id TEXT,
     volume INTEGER NOT NULL DEFAULT 70,
-    eq_preset TEXT NOT NULL DEFAULT 'flat',
+    eq_preset TEXT NOT NULL DEFAULT 'bas',
     paused_until REAL NOT NULL DEFAULT 0,
     radio_enabled INTEGER NOT NULL DEFAULT 0
 );
@@ -30,6 +30,15 @@ CREATE TABLE IF NOT EXISTS playlist (
 );
 """
 
+_CREATE_HOUR_ANNOUNCEMENTS = """
+CREATE TABLE IF NOT EXISTS hour_announcements (
+    guild_id TEXT NOT NULL,
+    hour INTEGER NOT NULL,
+    url TEXT NOT NULL,
+    PRIMARY KEY (guild_id, hour)
+);
+"""
+
 
 class Database:
     def __init__(self, path: str = None):
@@ -40,6 +49,7 @@ class Database:
         self._conn = await aiosqlite.connect(self.path)
         await self._conn.execute(_CREATE_SETTINGS)
         await self._conn.execute(_CREATE_PLAYLIST)
+        await self._conn.execute(_CREATE_HOUR_ANNOUNCEMENTS)
         await self._conn.commit()
 
     async def close(self):
@@ -158,3 +168,29 @@ class Database:
     async def clear_playlist(self, guild_id: int):
         await self._conn.execute("DELETE FROM playlist WHERE guild_id = ?", (str(guild_id),))
         await self._conn.commit()
+
+    # ---------- Zapowiedzi godzinowe ----------
+
+    async def set_hour_announcement(self, guild_id: int, hour: int, url: str):
+        await self._conn.execute(
+            "INSERT INTO hour_announcements (guild_id, hour, url) VALUES (?, ?, ?) "
+            "ON CONFLICT(guild_id, hour) DO UPDATE SET url = excluded.url",
+            (str(guild_id), hour, url),
+        )
+        await self._conn.commit()
+
+    async def remove_hour_announcement(self, guild_id: int, hour: int):
+        await self._conn.execute(
+            "DELETE FROM hour_announcements WHERE guild_id = ? AND hour = ?",
+            (str(guild_id), hour),
+        )
+        await self._conn.commit()
+
+    async def get_hour_announcements(self, guild_id: int) -> dict[int, str]:
+        cur = await self._conn.execute(
+            "SELECT hour, url FROM hour_announcements WHERE guild_id = ? ORDER BY hour ASC",
+            (str(guild_id),),
+        )
+        rows = await cur.fetchall()
+        await cur.close()
+        return {hour: url for hour, url in rows}

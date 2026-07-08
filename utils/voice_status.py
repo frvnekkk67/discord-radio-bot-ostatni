@@ -18,6 +18,8 @@ async def set_voice_channel_status(channel_id: int, status: str):
     try:
         session = await get_session()
         async with session.put(url, headers=headers, json={"status": status}) as resp:
+            if resp.status == 429:
+                return  # rate limit Discorda - nieszkodliwe, po prostu pomijamy tę aktualizację
             if resp.status not in (200, 204):
                 text = await resp.text()
                 print(f"[voice_status] Nie udało się ustawić statusu kanału ({resp.status}): {text}")
