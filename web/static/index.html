@@ -1,1 +1,96 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Radio Bot - Dashboard</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
 
+<div id="login-screen" class="screen">
+  <div class="card login-card">
+    <h1>📻 Radio Bot</h1>
+    <p class="muted">Podaj token dostępu, żeby wejść do panelu.</p>
+    <input id="token-input" type="password" placeholder="Token dostępu" />
+    <button id="login-btn" class="btn btn-primary">Zaloguj</button>
+    <p id="login-error" class="error hidden"></p>
+  </div>
+</div>
+
+<div id="dashboard-screen" class="screen hidden">
+  <header class="topbar">
+    <h1>📻 Radio Bot</h1>
+    <select id="guild-select"></select>
+    <button id="logout-btn" class="btn btn-ghost">Wyloguj</button>
+  </header>
+
+  <main class="grid">
+
+    <section class="card">
+      <h2>Teraz gra</h2>
+      <div id="now-playing" class="now-playing">—</div>
+      <div id="channel-info" class="muted">Niepołączony</div>
+      <div class="controls-row">
+        <button id="skip-btn" class="btn">⏭️ Pomiń</button>
+        <button id="resume-btn" class="btn">▶️ Wznów</button>
+      </div>
+      <div class="controls-row">
+        <input id="pause-minutes" type="number" min="0.1" max="180" step="0.5" value="1" />
+        <button id="pause-btn" class="btn">⏸️ Zatrzymaj na X min</button>
+      </div>
+      <div id="pause-countdown" class="muted hidden"></div>
+    </section>
+
+    <section class="card">
+      <h2>Zagraj teraz (z pominięciem kolejki)</h2>
+      <input id="playnow-input" type="text" placeholder="Tytuł, link YouTube albo link do pliku audio" />
+      <button id="playnow-btn" class="btn btn-primary">▶️ Zagraj teraz</button>
+      <h3>Kolejka</h3>
+      <ul id="queue-list" class="list"></ul>
+    </section>
+
+    <section class="card">
+      <h2>Połączenie</h2>
+      <select id="channel-select"></select>
+      <div class="controls-row">
+        <button id="connect-btn" class="btn btn-primary">📻 Połącz i włącz radio</button>
+        <button id="disconnect-btn" class="btn btn-danger">Rozłącz</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Głośność i equalizer</h2>
+      <label>Głośność: <span id="volume-value">70</span>%</label>
+      <input id="volume-slider" type="range" min="0" max="150" value="70" />
+      <label>Equalizer</label>
+      <select id="eq-select"></select>
+    </section>
+
+    <section class="card wide">
+      <h2>Playlista radiowa</h2>
+      <div class="controls-row">
+        <input id="playlist-url" type="text" placeholder="Link (YouTube albo bezpośredni plik audio)" />
+        <input id="playlist-title" type="text" placeholder="Tytuł (opcjonalnie)" />
+        <button id="playlist-add-btn" class="btn btn-primary">Dodaj</button>
+      </div>
+      <ul id="playlist-list" class="list"></ul>
+    </section>
+
+    <section class="card wide">
+      <h2>Zapowiedzi godzinowe</h2>
+      <p class="muted">Automatycznie przerywają aktualny utwór o pełnej godzinie (np. "Minęła właśnie jedenasta w Bass FM"). Equalizer wraca do normalnego zaraz po zapowiedzi.</p>
+      <div class="controls-row">
+        <input id="announcement-hour" type="number" min="0" max="23" placeholder="Godzina (0-23)" style="max-width: 140px;" />
+        <input id="announcement-url" type="text" placeholder="Link do pliku mp3 z zapowiedzią" />
+        <button id="announcement-add-btn" class="btn btn-primary">Dodaj</button>
+      </div>
+      <ul id="announcement-list" class="list"></ul>
+    </section>
+
+  </main>
+</div>
+
+<script src="/app.js"></script>
+</body>
+</html>
