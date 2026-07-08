@@ -10,7 +10,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils.player import resolve_playlist_queries, LavalinkUnavailableError
+from utils.player import resolve_playlist_queries, LavalinkUnavailableError, normalize_audio_url
 from utils.permissions import bot_admin_only, NotBotAdmin
 
 
@@ -49,6 +49,7 @@ class Settings(commands.Cog):
 
         settings = await self.bot.db.get_settings(interaction.guild_id)
         player.set_radio_tracks([t["url"] for t in playlist])
+        player.default_eq_preset = settings["eq_preset"]
         await player.apply_eq_preset(settings["eq_preset"])
         await player.set_volume(settings["volume"])
         await self.bot.db.set_voice_channel(interaction.guild_id, kanal.id, enabled=True)
@@ -67,6 +68,7 @@ class Settings(commands.Cog):
     @bot_admin_only()
     async def playlistadodaj(self, interaction: discord.Interaction, link: str, tytul: str = None):
         await interaction.response.defer()
+        link = normalize_audio_url(link)
         title = tytul or link
         await self.bot.db.add_track(interaction.guild_id, link, title)
         player = self.bot.players.get(interaction.guild_id)
@@ -117,6 +119,45 @@ class Settings(commands.Cog):
             lines.append(f"...i {len(playlist) - 25} więcej (pełna lista w dashboardzie)")
         await interaction.response.send_message("\n".join(lines))
 
+    @app_commands.command(
+        name="zapowiedz",
+        description="Ustawia zapowiedź (jingiel) odtwarzaną automatycznie o danej pełnej godzinie",
+    )
+    @app_commands.describe(
+        godzina="Godzina 0-23, o której ma się odtworzyć zapowiedź",
+        link="Bezpośredni link do pliku mp3 z zapowiedzią",
+    )
+    @bot_admin_only()
+    async def zapowiedz(self, interaction: discord.Interaction, godzina: int, link: str):
+        if not (0 <= godzina <= 23):
+            await interaction.response.send_message("Godzina musi być liczbą od 0 do 23.", ephemeral=True)
+            return
+        link = normalize_audio_url(link)
+        await self.bot.db.set_hour_announcement(interaction.guild_id, godzina, link)
+        await interaction.response.send_message(
+            f"Zapowiedź dla godziny **{godzina}:00** ustawiona. 📻 "
+            f"Odtworzy się automatycznie i przerwie aktualny utwór, gdy wybije ta godzina "
+            f"(equalizer chwilowo przełączy się na 'klasyczna', a wróci na normalny zaraz po)."
+        )
+
+    @app_commands.command(name="usunzapowiedz", description="Usuwa zapowiedź dla danej godziny")
+    @app_commands.describe(godzina="Godzina 0-23, dla której usunąć zapowiedź")
+    @bot_admin_only()
+    async def usunzapowiedz(self, interaction: discord.Interaction, godzina: int):
+        await self.bot.db.remove_hour_announcement(interaction.guild_id, godzina)
+        await interaction.response.send_message(f"Usunięto zapowiedź dla godziny **{godzina}:00**. 🗑️")
+
+    @app_commands.command(name="listazapowiedzi", description="Pokazuje skonfigurowane zapowiedzi godzinowe")
+    async def listazapowiedzi(self, interaction: discord.Interaction):
+        announcements = await self.bot.db.get_hour_announcements(interaction.guild_id)
+        if not announcements:
+            await interaction.response.send_message("Nie ustawiono jeszcze żadnych zapowiedzi godzinowych.")
+            return
+        lines = ["**Zapowiedzi godzinowe:**"]
+        for hour, url in sorted(announcements.items()):
+            lines.append(f"`{hour:02d}:00` → {url}")
+        await interaction.response.send_message("\n".join(lines))
+
     async def _permission_error(self, interaction: discord.Interaction, error):
         if isinstance(error, (app_commands.MissingPermissions, NotBotAdmin)):
             await interaction.response.send_message(
@@ -145,6 +186,14 @@ class Settings(commands.Cog):
 
     @playlistausun.error
     async def playlistausun_error(self, interaction, error):
+        await self._permission_error(interaction, error)
+
+    @zapowiedz.error
+    async def zapowiedz_error(self, interaction, error):
+        await self._permission_error(interaction, error)
+
+    @usunzapowiedz.error
+    async def usunzapowiedz_error(self, interaction, error):
         await self._permission_error(interaction, error)
 
 
